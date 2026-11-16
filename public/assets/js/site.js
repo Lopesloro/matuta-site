@@ -1,5 +1,6 @@
 (function () {
   'use strict';
+  var r = function (n, d) { if (window.rastrear) window.rastrear(n, d); };
   var reduz = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* idade: lembra a resposta no aparelho */
@@ -12,12 +13,13 @@
     var b1 = idade.querySelector('[data-idade="sim"]');
     if (b1) b1.focus();
     idade.addEventListener('click', function (ev) {
-      var r = ev.target.getAttribute('data-idade');
-      if (r === 'sim') {
+      var resp = ev.target.getAttribute('data-idade');
+      if (resp === 'sim') {
         try { localStorage.setItem('matuta-18', 'sim'); } catch (e) {}
         idade.classList.remove('on');
         document.documentElement.style.overflow = '';
-      } else if (r === 'nao') {
+        r('maioridade');
+      } else if (resp === 'nao') {
         document.getElementById('idade-menor').style.display = 'block';
         idade.querySelector('.acoes').style.display = 'none';
       }
@@ -88,6 +90,8 @@
     fecharFicha();
     aberta = f; ultimo = origem || null;
     f.classList.add('aberta');
+    var h3 = f.querySelector('h3'), ln = f.querySelector('.linha');
+    r('ver_rotulo', { nome: h3 ? h3.textContent.trim() : f.id, linha: ln ? ln.textContent.trim() : '' });
     document.documentElement.style.overflow = 'hidden';
     var c = f.querySelector('.fechar'); if (c) c.focus({ preventScroll: true });
   }
@@ -124,6 +128,8 @@
     if (!a) return;
     ev.preventDefault();
     var id = a.dataset.yt;
+    var art = a.closest('article'), tt = art && art.querySelector('h3');
+    r('ver_video', { titulo: tt ? tt.textContent.trim() : 'Meninos de Engenho' });
     if (a.hasAttribute('data-inline')) {
       a.innerHTML = ''; a.appendChild(iframe(id)); a.removeAttribute('href');
       return;
@@ -140,6 +146,12 @@
     player.querySelector('.fechar').focus();
   });
 
+  /* contato: telefone e e-mail em qualquer lugar da página */
+  document.addEventListener('click', function (ev) {
+    var a = ev.target.closest && ev.target.closest('a[href^="tel:"], a[href^="mailto:"]');
+    if (a) r('contato', { canal: a.href.indexOf('tel:') === 0 ? 'telefone' : 'email' });
+  });
+
   /* onde comprar */
   var uf = document.getElementById('uf'), res = document.getElementById('resultado');
   var lista = window.REPRESENTANTES || {};
@@ -148,6 +160,7 @@
   if (uf) uf.addEventListener('change', function () {
     var v = uf.value, nome = uf.options[uf.selectedIndex].text;
     if (!v) { res.innerHTML = ''; return; }
+    r('buscar_estado', { uf: v });
     var reps = lista[v] || [];
     if (reps.length) {
       res.innerHTML = reps.map(function (r) {
